@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+    <script src='https://api.mapbox.com/mapbox.js/v2.2.3/mapbox.js'></script>
+    <link href='https://api.mapbox.com/mapbox.js/v2.2.3/mapbox.css' rel='stylesheet' />
+    <style>
+        body {
+            margin: 0;
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+        }
+
+        #map {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <style>
+        body {
+            font: 12px Arial;
+        }
+
+        div.tooltip {
+            position: absolute;
+            text-align: center;
+            width: 250px;
+            height: 160px;
+            padding: 2px;
+            font: 10px sans-serif;
+            background: lightsteelblue;
+            border: 2px;
+            border-radius: 18px;
+            pointer-events: none;
+            opacity: 0;
+
+        }
+
+        div.tooltip2 {
+            position: absolute;
+            opacity: 0;
+            width: 400px;
+            height: 200px;
+            padding: 2px;
+            font: 10px sans-serif;
+            background: rgba(76, 175, 80, 0);
+            border: 2px;
+            border-radius: 18px;
+            pointer-events: none;
+        }
+
+        div.tooltip4 {
+            position: absolute;
+            text-align: center;
+            width: 900px;
+            height: 50px;
+            left: 200px;
+            top: 10px;
+            padding: 2px;
+            font: 10px sans-serif;
+            background: lightsteelblue;
+            border: 2px;
+            border-radius: 10px;
+            pointer-events: none;
+            opacity: 0;
+        }
+        div.tooltip5 {
+            position: absolute;
+            width: 235px;
+            height: 135px;
+            left: 1000px;
+            top: 80px;
+            padding: 2px;
+            font: 10px sans-serif;
+            background:#afe0a8;
+            border: 2px;
+            border-radius: 10px;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        .cont {
+
+            position: absolute;
+            text-align: center;
+            width: 400px;
+            height: 200px;
+            padding: 2px;
+        }
+
+        .cont2 {
+
+            position: absolute;
+            text-align: center;
+            width: 600px;
+            height: 300px;
+            padding: 2px;
+        }
+
+
+        #data-changer3 {
+            position: absolute;
+            font: 15px sans-serif;
+            text-align: center;
+            color: white;
+            opacity: 0.88;
+            width: 120px;
+            height: 50px;
+            padding: 5px;
+            top: 10px;
+            left: 50px;
+            border-radius: 10px;
+            background-color: #4da8f2;
+        }
+        #data-changer2 {
+            position: absolute;
+            font: 15px sans-serif;
+            text-align: center;
+            color: white;
+            opacity: 0.88;
+            width: 120px;
+            height: 50px;
+            padding: 5px;
+            top: 10px;
+            left: 1120px;
+            border-radius: 10px;
+            background-color: #63c454;
+        }
+        #date-changer {
+            position:absolute;
+            writing-mode: bt-lr;
+            -webkit-appearance: slider-vertical;
+            border: 1px solid #000000;
+            height: 36px;
+            width: 16px;
+            border-radius: 3px;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -14px; /* You need to specify a margin in Chrome, but in Firefox and IE it is automatic */
+            box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d; /* Add cool effects to your sliders! */
+            width: 8px;
+            height: 380px;
+            padding: 0 5px;
+            position: absolute;
+            top:70px;
+            left:15px;
+        }
+        #dateValue {
+            position:absolute;
+            width: 150px;
+            height: 380px;
+            padding: 0 5px;
+            position: absolute;
+            top:440px;
+            left:35px;
+            color: blue;
+        }
+        .bar{
+          fill: steelblue;
+        }
+
+        .bar:hover{
+          fill: brown;
+        }
+
+          .axis {
+            font: 10px sans-serif;
+          }
+
+          .axis path,
+          .axis line {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+          }
+    </style>
+</head>
+
+<body>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+
+    <div id="map"></div>
+    <div>
+        <input type="range" value="0" min="0" max="296" orient="vertical" id="date-changer"/>
+    </div>
+    <div>
+        <label><span id="dateValue"></span></label>
+    </div>
+    <div id="option">
+        <input name="updateButton" id="data-changer3" type="button" value="Arrondissement" onclick="updateData()" />
+        <input name="updateButton2" id="data-changer2" type="button" value="help" onclick="help()" />
+    </div>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/d3-legend/1.1.0/d3-legend.js"></script>
+    <script>
+        L.mapbox.accessToken = 'pk.eyJ1IjoiZW5qYWxvdCIsImEiOiJjaWhtdmxhNTIwb25zdHBsejk0NGdhODJhIn0.2-F2hS_oTZenAWc0BMf_uw'
+
+
+
+        //Setup our Leaflet map using Mapbox.js
+        var map = L.mapbox.map('map', 'mapbox.pencil', {
+                maxZoom: 18,
+                minZoom: 12
+            })
+            .setView([45.7531152, 4.827906], 12);
+
+        L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
+            maxZoom: 18,
+            attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+                '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+                'Imagery © <a href="http://mapbox.com">Mapbox</a>',
+            id: 'mapbox.streets'
+        }).addTo(map);
+
+//DEFINITION DE DIVS////////////////////////////////////////////////////
+        // Setup our svg layer that we can manipulate with d3
+
+        var svg = d3.select(map.getPanes().overlayPane)
+            .append("svg");
+
+        var g = svg.append("g").attr("class", "leaflet-zoom-hide");
+
+        var divGra = svg.append("g").attr("id", "container")
+
+        var svgGra = divGra.append("svg").attr("id", "svgcontainer")
+
+
+        var divGra = d3.select("body").append("div")
+            .attr("id", "htmlcont")
+            .attr("class", "tooltip2")
+            .style("opacity", 0)
+
+
+        // Define the div for the tooltip
+        var div = d3.select("body").append("div")
+            .attr("id", "pop")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+
+        var divArr2 = d3.select("body").append("div")
+            .attr("id", "arr2")
+            .attr("class", "tooltip4")
+            .style("opacity", 0);
+
+        var divArr3 = d3.select("body").append("div")
+            .attr("id", "arr3")
+            .attr("class", "tooltip5")
+            .style("opacity", 0);
+///////////////////////////////////////////////////////////////////////////
+
+//FUNCTIONS///////////////////////////////////////////////////////////////
+
+        //FUNCTIONS ARRONDISSEMENT//////////////////////////////////////////////////////////////////7
+
+        var nbvelov = [];
+
+        function veloArrond(data) {
+
+            var nbvelov1 = 0,nbvelov2 = 0,nbvelov3 = 0,nbvelov4 = 0,nbvelov5 = 0,nbvelov6 = 0,nbvelov7 = 0,nbvelov8 = 0,nbvelov9 = 0,nbvelovV = 0,nbvelovVa = 0,nbvelovCal = 0
+
+            nbvelov.length = 0
+
+            for (i = 0; i < data.values.length; i++) {
+                //console.log(data.values[i].commune)
+
+                if (data.values[i].commune == "Lyon 1 er") {
+                    nbvelov1 = nbvelov1 + parseFloat(data.values[i].available_bikes)
+                }
+                if (data.values[i].commune == "Lyon 2 ème") {
+                    nbvelov2 = nbvelov2 + parseFloat(data.values[i].available_bikes)
+                }
+                if (data.values[i].commune == "Lyon 3 ème") {
+                    nbvelov3 = nbvelov3 + parseFloat(data.values[i].available_bikes)
+                }
+                if (data.values[i].commune == "Lyon 4 ème") {
+                    nbvelov4 = nbvelov4 + parseFloat(data.values[i].available_bikes)
+                }
+                if (data.values[i].commune == "Lyon 5 ème") {
+                    nbvelov5 = nbvelov5 + parseFloat(data.values[i].available_bikes)
+                }
+                if (data.values[i].commune == "Lyon 6 ème") {
+                    nbvelov6 = nbvelov6 + parseFloat(data.values[i].available_bikes)
+                }
+                if (data.values[i].commune == "Lyon 7 ème") {
+                    nbvelov7 = nbvelov7 + parseFloat(data.values[i].available_bikes)
+                }
+                if (data.values[i].commune == "Lyon 8 ème") {
+                    nbvelov8 = nbvelov8 + parseFloat(data.values[i].available_bikes)
+                }
+                if (data.values[i].commune == "Lyon 9 ème") {
+                    nbvelov9 = nbvelov9 + parseFloat(data.values[i].available_bikes)
+                }
+                if (data.values[i].commune == "VILLEURBANNE") {
+                    nbvelovV = nbvelovV + parseFloat(data.values[i].available_bikes)
+                }
+                if (data.values[i].commune == "VAULX-EN-VELIN") {
+                    nbvelovVa = nbvelovVa + parseFloat(data.values[i].available_bikes)
+                }
+                if (data.values[i].commune == "CALUIRE-ET-CUIRE") {
+                    nbvelovCal = nbvelovCal + parseFloat(data.values[i].available_bikes)
+                }
+            }
+
+            nbvelov.push(nbvelov1, nbvelov2, nbvelov3, nbvelov4, nbvelov5, nbvelov6, nbvelov7, nbvelov8, nbvelov9, nbvelovV, nbvelovVa, nbvelovCal);
+            //console.log(nbvelov)
+
+        }
+        var clicked2 = false;
+        function help(){
+            console.log(clicked2)
+             if (clicked2 == false) {
+             divArr3.transition()
+                    .duration(1000)
+                    .style("opacity", .85);
+
+            divArr3.html("<h2>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbspApplication help</h2><p>&nbsp&nbsp&nbsp&nbsp&nbspClick on the slide bar to select the date.</p><p>&nbsp&nbsp&nbsp&nbsp&nbspFly over the stations to obtain information</p><p>&nbsp&nbsp&nbsp&nbsp&nbspClick on the station for more detailed information</p><p>&nbsp&nbsp&nbsp&nbsp&nbspArrondisement button: number of velov by &nbsp&nbsp&nbsp&nbsp&nbspneighborhood</p>")
+                    .style("left", 1000)
+                    .style("top", 20)
+                clicked2 = true
+                }else {
+                divArr3.transition()
+                    .duration(1000)
+                    .style("opacity", 0);
+                clicked2 = false
+            }
+        }
+
+        var clicked = false;
+        function updateData() {
+
+            if (clicked == false) {
+                divArr2.transition()
+                    .duration(1000)
+                    .style("opacity", .85);
+                divArr2.html("<h2>Nb de velov par quartier&nbsp&nbsp&nbsp&nbsp1: " + nbvelov[0] + "&nbsp&nbsp&nbsp&nbsp2: " + nbvelov[1] + "&nbsp&nbsp&nbsp&nbsp3: " + nbvelov[2] + "&nbsp&nbsp&nbsp&nbsp4: " + nbvelov[3] + "&nbsp&nbsp&nbsp&nbsp&nbsp5 : " + nbvelov[4] + "&nbsp&nbsp&nbsp&nbsp6: " + nbvelov[5] + "&nbsp&nbsp&nbsp&nbsp7: " + nbvelov[6] + "&nbsp&nbsp&nbsp&nbsp8: " + nbvelov[7] + "&nbsp&nbsp&nbsp&nbsp9: " + nbvelov[8] + "&nbsp&nbsp&nbsp&nbspV: " + nbvelov[9] + "&nbsp&nbsp&nbsp&nbspVV: " + nbvelov[10] + "&nbsp&nbsp&nbsp&nbspCC: " + nbvelov[11] + " </h2>")
+                    .style("left", 500)
+                    .style("top", 500)
+
+                clicked = true
+            } else {
+                divArr2.transition()
+                    .duration(1000)
+                    .style("opacity", 0);
+                clicked = false
+            }
+            //console.log(clicked)
+        }
+        ///////////////////////////////////////////////////////////////////////
+
+        //FUNCTION RENDER//////////////////////////////////////////////7777
+        function render() {
+                // We need to reposition our SVG and our containing group when the map
+                // repositions via zoom or pan
+                // https://github.com/zetter/voronoi-maps/blob/master/lib/voronoi_map.js
+
+                var color = d3.scale.linear()
+                    .domain([0, 30])
+                    .range([d3.rgb("#FF0000"), d3.rgb('#00FF00')]);
+
+                var bounds = map.getBounds();
+                var topLeft = map.latLngToLayerPoint(bounds.getNorthWest())
+                var bottomRight = map.latLngToLayerPoint(bounds.getSouthEast())
+                svg.style("width", map.getSize().x + "px")
+                    .style("height", map.getSize().y + "px")
+                    .style("left", topLeft.x + "px")
+                    .style("top", topLeft.y + "px");
+                g.attr("transform", "translate(" + -topLeft.x + "," + -topLeft.y + ")");
+
+
+                // We reproject our data with the updated projection from leaflet
+                g.selectAll("circle.dot")
+                    .attr({
+                        cx: function(d) {
+                            return project(d).x
+                        },
+                        cy: function(d) {
+                            return project(d).y
+                        },
+                        r: function(d) {
+                            return d.bike_stands / 5;
+                        },
+                    }).style("fill", d => {
+                        return color(d.available_bikes)
+                    }).on("mouseover", handleMouseOver).on("mouseout", handleMouseOut).on("click", handleMouseClicked);
+
+
+                g.selectAll("g.pie")
+                    .attr({
+                        x: function(d) {
+                            return project(d).x
+                        },
+                        y: function(d) {
+                            return project(d).y
+                        },
+                    })
+
+
+            }
+
+        function project(ll) {
+            // our data came from csv, make it Leaflet friendly
+            var a = [+ll.lat, +ll.lon];
+            //console.log(ll)
+            // convert it to pixel coordinates
+            var point = map.latLngToLayerPoint(L.latLng(ll))
+            return point;
+        }
+
+            //////////////////////////////////////////////////////////////////
+                //BAR CHART/////////////////////////////////////////////////
+
+        function createBarChart(d) {
+                var aColor = [
+                    'rgb(0, 204, 0)',
+                    'rgb(204, 0, 0)',
+                ]
+
+                var datas = [{
+                        "label": "Available Bikes",
+                        "value": d.available_bikes,
+                        "posXi": d3.event.pageX + 50,
+                        "posYi": d3.event.pageY,
+                        "posXf": screen.width-345,
+                        "posYf": screen.height-218
+                    },
+                    {
+                        "label": "Available Stands",
+                        "value": d.available_bike_stands,
+                        "posXi": d3.event.pageX + 50,
+                        "posYi": d3.event.pageY + 20,
+                        "posXf": screen.width-345,
+                        "posYf": screen.height-184
+                    },
+                ];
+
+                svgGra.append("g").attr("id", "bar")
+                    .selectAll("bar")
+                    .data(datas)
+                    .enter().append("rect")
+                    .attr("id", "bars")
+                    .style("fill", function(d, i) {
+                        return aColor[i];
+                    })
+                    .attr("x", function(d) {
+                        return d.posXi;
+                    })
+                    .attr("width", function(d) {
+                        return d.value * 9;
+                    })
+                    .attr("y", function(d) {
+                        return d.posYi;
+                    })
+                    .attr("height", 10)
+                    .transition().duration(500).attr("y", function(d) {
+                        return d.posYf;
+                    })
+                    .transition().duration(500).attr("x", function(d) {
+                        return d.posXf;
+                    })
+                /////////////////////////////////////////////////////////////
+            }
+            /// PREVISIONS
+            function Previsions(element) {
+    
+    // set the dimensions of the canvas
+    var margin = {top: 20, right: 20, bottom: 70, left: 40},
+    width = 600 - margin.left - margin.right,
+    height = 300 - margin.top - margin.bottom;
+
+    // set the ranges
+    var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
+    var y = d3.scale.linear().range([height, 0]);
+    // define the axis
+    var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom")
+
+
+    
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left")
+        .ticks(10);
+    // add the SVG element
+    var svg2 = d3.select("body").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", 
+              "translate(" + margin.left + "," + margin.top + ")");
+
+    var maxBikes = d3.max(dat.values, function(d){    
+    var temp=parseInt(d.bike_stands);
+        return  temp   }); 
+                  var tab=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24];
+  // scale the range of the data
+  x.domain(tab);
+  y.domain([0, maxBikes]);
+    // add axis
+    var screenH1 = screen.height -170;
+    var screenH2 = screenH1-210 ;
+    var pos_bar_chart = 100;
+
+  svg.append("g").attr("id", "axe1")
+      .attr("class", "x axis")
+      .attr("id","axis1")
+      .attr("transform", "translate(" + pos_bar_chart + "," + screenH1 + ")")
+      .call(xAxis)
+    .selectAll("text")
+      .style("text-anchor", "end")
+      .attr("dx", "")
+      .attr("dy", "")
+      .attr("transform", "rotate(-90)");
+  
+    
+  svg.append("g").attr("id", "axe2")
+      .attr("class", "y axis")
+      .attr("id","axis2")
+      .attr("transform", "translate(" + pos_bar_chart + "," + screenH2 + ")")
+      .call(yAxis)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 5)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("bikes");
+  //var arr= data.values; 
+   //console.log(typeof(arr)); 
+  
+  //arr.forEach(function(element) //{ 
+  
+       var signe=getRandomInt(100)>50?1:-1;
+       var correction=signe*getRandomInt((parseInt(element.bike_stands)-    			    parseInt(element.available_bike_stands)/2));   
+     var     estimation1=parseInt(element.available_bike_stands)+correction;   
+      estimation1=estimation1>0?estimation1:0;
+      estimation1=estimation1>maxBikes?maxBikes:estimation1;
+      var estimation2,estimation3,estimation4,estimation5,estimation6,estimation7,estimation8,estimation9,estimation10,estimation11,estimation12,estimation13,estimation14,estimation15,estimation16,estimation17,estimation18,estimation19,estimation20,estimation21,estimation22,estimation23,estimation24,rand;
+      
+     estimation2=estimation(estimation1,maxBikes);
+     estimation3=estimation(estimation1,maxBikes);
+     estimation4=estimation(estimation1,maxBikes);
+     estimation5=estimation(estimation1,maxBikes);
+     estimation6=estimation(estimation1,maxBikes);
+     estimation7=estimation(estimation1,maxBikes);
+     estimation8=estimation(estimation1,maxBikes);
+     estimation9=estimation(estimation1,maxBikes);
+     estimation10=estimation(estimation1,maxBikes);
+     estimation11=estimation(estimation1,maxBikes);
+     estimation12=estimation(estimation1,maxBikes);
+     estimation13=estimation(estimation1,maxBikes); 
+     estimation14=estimation(estimation1,maxBikes);
+     estimation15=estimation(estimation1,maxBikes);
+     estimation16=estimation(estimation1,maxBikes);
+     estimation17=estimation(estimation1,maxBikes);
+     estimation18=estimation(estimation1,maxBikes);
+     estimation19=estimation(estimation1,maxBikes);
+     estimation20=estimation(estimation1,maxBikes);
+     estimation21=estimation(estimation1,maxBikes);
+     estimation22=estimation(estimation1,maxBikes);
+     estimation23=estimation(estimation1,maxBikes);
+     estimation24=estimation(estimation1,maxBikes);
+    
+    
+     
+    
+     
+    
+      element.previsions=[{"prev":1,"value":estimation1},{"prev":2,"value":estimation2},{"prev":3,"value":estimation3},{"prev":4,"value":estimation4},{"prev":5,"value":estimation5},{"prev":6,"value":estimation6},{"prev":7,"value":estimation7},{"prev":8,"value":estimation8},{"prev":9,"value":estimation9},{"prev":10,"value":estimation10},{"prev":11,"value":estimation11},{"prev":12,"value":estimation12},{"prev":13,"value":estimation13},{"prev":14,"value":estimation14},{"prev":15,"value":estimation15},{"prev":16,"value":estimation16},{"prev":17,"value":estimation17},{"prev":18,"value":estimation18},{"prev":19,"value":estimation19},{"prev":20,"value":estimation20},{"prev":21,"value":estimation21},{"prev":22,"value":estimation20},{"prev":23,"value":estimation23},{"prev":24,"value":estimation24}] ;
+     
+     svg.selectAll("bar").attr("id", "barr").data(element.previsions)
+    .enter().append("rect")
+      .attr("transform", "translate(" + pos_bar_chart + "," + screenH2 + ")")
+      .attr("class", "bar")
+      .attr("id", "rectPrev")
+      .attr("x",function(d) { return x(d.prev); })
+      .attr("width", x.rangeBand())
+      .attr("y",function(d) { return y(d.value); })
+      .attr("height",function(d) {  
+     return height - y(d.value); }); 
+     
+        } 
+     function estimation(estimation1,maxBikes) {
+       var signe,res,rand;
+      signe=getRandomInt(100)>50?1:-1;
+      rand = getRandomInt(5);
+      res=parseInt(estimation1)+signe*rand;
+      res=res>0?res:0;
+      res=res>maxBikes?maxBikes:res;
+      return res;
+    }
+        function getRandomInt(max) {
+      return Math.floor(Math.random() * Math.floor(max));
+    }
+
+            //PIE CHART///////////////////////////////////////////////////////////////////////////////////////
+
+        function createPieChart(d) {
+
+                var w = 60;
+                var h = 60;
+                var r = h / 2;
+                var aColor = [
+                    'rgb(0, 204, 0)',
+                    'rgb(204, 0, 0)',
+                ]
+                var available_bikes_p = Math.round(parseFloat(d.available_bikes) * 100 / (parseFloat(d.available_bikes)+parseFloat(d.available_bike_stands)))
+
+                var datas = [{
+                        "label": "Available Bikes",
+                        "value": available_bikes_p
+                    },
+                    {
+                        "label": "Available Stands",
+                        "value": 100 - available_bikes_p
+                    },
+                ];
+
+                var g = svg.append("g").attr("id", "pie").attr("class", "pie").data([datas]).attr("width", w).attr("height", h).append("g").attr("transform", "translate(" + d3.event.pageX + "," + d3.event.pageY + ")");
+
+                var pie = d3.layout.pie().value(function(d) {
+                    return d.value;
+                });
+
+                // Declare an arc generator function
+                var arc = d3.svg.arc().outerRadius(r);
+
+                // Select paths, use arc generator to.attr("class", "leaflet-zoom-hide");
+
+                var arcs = g.selectAll("g.slice").data(pie).enter().append("svg:g").attr("class", "slice");
+                arcs.append("svg:path")
+                    .attr("fill", function(d, i) {
+                        return aColor[i];
+                    })
+                    .attr("d", function(d) {
+                        return arc(d);
+                    });
+                // Add the text
+                arcs.append("svg:text")
+                    .attr("transform", function(d) {
+                        d.innerRadius = 100; /* Distance of label to the center*/
+                        d.outerRadius = r;
+                        return "translate(" + arc.centroid(d) + ")";
+                    })
+                    .attr("text-anchor", "middle")
+                    .text(function(d, i) {
+                        return datas[i].label + ";" + datas[i].value + '%';
+                    });
+                //////////////////////////////////////////////////////////////////////////////////////////
+            }
+
+        function createFrame(d) {
+                svgGra.append("rect")
+                    .style("fill", "#d8faff")
+                    .style("opacity", .0)
+                    .attr("id", "idcont")
+                    .attr("class", "cont")
+                    .attr("x", d3.event.pageX)
+                    .attr("y", d3.event.pageY)
+                    .transition()
+                    .duration(500)
+                    .style("opacity", .7)
+                    .transition().duration(500).attr("x", screen.width- 450)
+                    .transition().duration(500).attr("y", screen.height - 350)
+
+
+                d3.select("#htmlcont")
+                    .transition()
+                    .duration(500)
+                    .style("opacity", .7);
+                d3.select("#htmlcont").html("<h2>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbspNº: " + d.number + " " + d.name.toUpperCase() + "<h2>Adresse: " + d.address + "</h2><h2>Commune: " + d.commune + "</h2><h2>Status: " + d.status + "<h2>Velov: " + d.available_bikes + "</h2></h2> <h2>Stand: " + d.available_bike_stands + "</h2>")
+                    .style("left", screen.width -425 + "px")
+                    .style("top", screen.height -350 + "px")
+            }
+
+            function createFramePrevisions(d) {
+                svgGra.append("rect")
+                    .style("fill", "#d8faff")
+                    .style("opacity", .0)
+                    .attr("id", "idcont2")
+                    .attr("class", "cont2")
+                    .attr("x", d3.event.pageX)
+                    .attr("y", d3.event.pageY)
+                    .transition()
+                    .duration(500)
+                    .style("opacity", .7)
+                    .transition().duration(500).attr("x", 50)
+                    .transition().duration(500).attr("y", screen.height - 420)
+ 
+            }
+            
+
+        //FUNCTIONS SOURIS////////////////////////////////////////////////////////////////////777
+            function handleMouseClicked(d, i) {
+                EraseContent()
+                createFrame(d)
+                createFramePrevisions()
+                createBarChart(d)
+                createPieChart(d)
+                Previsions(d)
+                render();
+            }
+
+            function handleMouseOver(d, i) { // Add interactivity
+                //console.log(d);
+                d3.select(this).attr({
+                    r: function(d) {
+                        return d.bike_stands;
+                    }
+                }).style("fill", function(d) {
+                    if (d.available_bikes == 0) return "#cc0010";
+                    else return "#ffffff"
+                });
+
+                div.transition()
+                    .duration(1000)
+                    .style("opacity", .7);
+                div.html("<h2>Name: " + d.name + "<h2>Adresse: " + d.address + "</h2></h2> <h2>Nb Velov: " + d.available_bikes + "</h2></h2> <h2>Nb Stations: " + d.available_bike_stands + "</h2>")
+                    .style("left", (d3.event.pageX) + "px")
+                    .style("top", (d3.event.pageY - 28) + "px")
+            }
+
+            function handleMouseOut(d, i) {
+                // Use D3 to select element, change color back to normal
+                div.transition()
+                    .duration(500)
+                    .style("opacity", 0);
+                render();
+            }
+
+
+            // re-render our visualization whenever the view changes
+            map.on("viewreset", function() {
+                render()
+                EraseContent()
+               // console.log(data)
+            })
+            map.on("move", function() {
+                render()
+                EraseContent()
+            })
+            ///////////////////////////////////////////////////
+    //ELIMINER QUAND ON BOUGE
+            function EraseContent() {
+                svg.selectAll("#pie").remove()
+                svg.selectAll("#bars").transition().duration(1000).attr("width", 0).remove()
+                svg.selectAll("#bar").remove()
+                svg.selectAll("#idcont").remove()
+                svg.selectAll("#idcont2").remove()
+                svg.selectAll("#rectPrev").remove()
+                svg.selectAll("#axis1").remove()
+                svg.selectAll("#axis2").remove()
+
+                divGra.transition()
+                    .duration(500)
+                    .style("opacity", 0);
+                render();
+
+                svg.selectAll("#htmlcont").remove()
+                svg.selectAll("#pop").remove()
+
+            }
+            var last_value = 0;
+            var current_value = 0;
+            var minutes = 0;
+            var hour = 10;
+            var days = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+            var day_index = 0;
+            var day = days[0];
+            var day_date = 4;
+            var ind = 0;
+            d3.select("#date-changer").on("change", function() {
+            //console.log(data.values);
+            console.log("-----**________________**---");
+            current_value = this.value
+            console.log("current_value: ", current_value);
+            console.log("last_value: ", last_value);
+            var fileName = "data/file"+this.value+".json";
+            //console.log(fileName);
+            minutes = current_value * 5 + 10 * 60 - ind * 24 * 60;
+            hour = parseInt(minutes/60);
+            minutes = parseInt(minutes%60);
+            if(current_value > last_value) {
+                var b = false;
+                if (hour >= 24) {
+                    hour = hour - 24;
+                    ind += 1;
+                    b = true;
+                }
+                if(b) {
+                    day_date += 1;
+                    b = false;
+                }
+            }
+            if(current_value < last_value) {
+                if(minutes < 0) {
+                    minutes = 60 + minutes;
+                }
+                if(hour<0) {
+                    hour = 24 + hour -1;
+                    ind -= 1;
+                }
+                
+                if (hour === 0 && minutes === 0 ) {
+                    day_date -= 1;
+                }
+                
+                //minutes = 60 + minutes;
+                //console.log(hour);
+                //console.log(minutes);
+            }
+            var dateExact = " 0"+ day_date +"/02/2018- "+hour+":"+minutes;
+            if(hour < 10 && minutes < 10) {
+                var dateExact =" 0"+ day_date +"/02/2018- 0"+hour+":0"+minutes;
+            }
+            else if (hour < 10) {
+                var dateExact =" 0"+ day_date +"/02/2018- 0"+hour+":"+minutes;
+            }
+            else if(minutes < 10){
+                var dateExact =" 0"+ day_date +"/02/2018- "+hour+":0"+minutes;
+            }
+            d3.select('#dateValue').html(dateExact);
+            mainCode(fileName);
+            });
+
+////////////////////////////////////////////////////////////////////////////////////////
+        var dat;
+//MAIN//////////////////////////////////////////////////////////////////////////////////           
+        function mainCode(fileName) {
+            d3.json(fileName, function(err, data) {
+                console.log(data)
+                veloArrond(data)
+                dat = data;
+                var dots = g.selectAll("circle.dot")
+                    .data(data.values)
+                //console.log(dots)
+                dots.enter().append("circle").classed("dot", true)
+                    .attr("r", 1)
+                    .style({
+                        fill: "#0082a3",
+                        "fill-opacity": 0.6,
+                        stroke: "#004d60",
+                        "stroke-width": 1
+                    })
+                    .transition().duration(1000)
+                    .attr("r", 6)
+                var dots = g.selectAll("circle.dot")
+                    .data(data.values)
+                //console.log(data.values)
+                dots.classed("dot", true)
+                .attr("r", 1)
+                .style({
+                    fill: "#0082a3",
+                    "fill-opacity": 0.6,
+                    stroke: "#004d60",
+                    "stroke-width": 1
+                })
+                .transition().duration(1000)
+                .attr("r", 4)
+                // render our initial visualization
+                render()
+                veloArrond(data)
+                last_value = current_value;
+            })
+        }
+//////////////////////////////////////////////////////////////////////////////////////////////7
+    </script>
+</body>
